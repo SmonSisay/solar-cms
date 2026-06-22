@@ -1,6 +1,6 @@
 import { connectDB } from '@/lib/mongodb';
 import TeamMember from '@/lib/models/TeamMember';
-import { apiSuccess, apiError, requireAdmin } from '@/lib/api';
+import { apiSuccess, apiError, requirePermission } from '@/lib/api';
 import { teamMemberSchema } from '@/lib/validations';
 
 export async function GET() {
@@ -9,23 +9,22 @@ export async function GET() {
     const members = await TeamMember.find().sort({ order: 1 }).lean();
     return apiSuccess(members);
   } catch (error) {
-    return apiError('Failed to fetch team', 500);
+    return apiError(error);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission('manage_team');
     if (!session) return apiError('Unauthorized', 401);
 
     const body = await request.json();
-    const parsed = teamMemberSchema.safeParse(body);
-    if (!parsed.success) return apiError(parsed.error.issues[0]?.message ?? 'Invalid data');
+    const parsed = teamMemberSchema.parse(body);
 
     await connectDB();
-    const member = await TeamMember.create(parsed.data);
+    const member = await TeamMember.create(parsed);
     return apiSuccess(member, 201);
   } catch (error) {
-    return apiError('Failed to create team member', 500);
+    return apiError(error);
   }
 }

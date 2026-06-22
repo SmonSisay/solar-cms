@@ -1,13 +1,27 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { hasPermission, type Permission, type UserRole } from '@/lib/permissions';
+import { normalizeError } from './errors';
 
 export function apiSuccess<T>(data: T, status = 200) {
   return NextResponse.json({ success: true, data }, { status });
 }
 
-export function apiError(error: string, status = 400) {
-  return NextResponse.json({ success: false, error }, { status });
+export function apiError(error: any, status?: number) {
+  const normalized = normalizeError(error);
+  const finalStatus = status ?? normalized.statusCode;
+  return NextResponse.json(
+    {
+      success: false,
+      error: normalized.message,
+      errorDetails: {
+        code: normalized.code,
+        message: normalized.message,
+        details: normalized.details,
+      },
+    },
+    { status: finalStatus }
+  );
 }
 
 export async function requireAuth() {

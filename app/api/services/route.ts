@@ -1,6 +1,6 @@
 import { connectDB } from '@/lib/mongodb';
 import Service from '@/lib/models/Service';
-import { apiSuccess, apiError, requireAdmin } from '@/lib/api';
+import { apiSuccess, apiError, requirePermission } from '@/lib/api';
 import { serviceSchema } from '@/lib/validations';
 
 export async function GET() {
@@ -9,23 +9,22 @@ export async function GET() {
     const services = await Service.find().sort({ order: 1 }).lean();
     return apiSuccess(services);
   } catch (error) {
-    return apiError('Failed to fetch services', 500);
+    return apiError(error);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission('manage_services');
     if (!session) return apiError('Unauthorized', 401);
 
     const body = await request.json();
-    const parsed = serviceSchema.safeParse(body);
-    if (!parsed.success) return apiError(parsed.error.issues[0]?.message ?? 'Invalid data');
+    const parsed = serviceSchema.parse(body);
 
     await connectDB();
-    const service = await Service.create(parsed.data);
+    const service = await Service.create(parsed);
     return apiSuccess(service, 201);
   } catch (error) {
-    return apiError('Failed to create service', 500);
+    return apiError(error);
   }
 }
