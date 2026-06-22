@@ -1,6 +1,6 @@
 import { connectDB } from '@/lib/mongodb';
 import BlogPost from '@/lib/models/BlogPost';
-import { apiSuccess, apiError, requireAdmin } from '@/lib/api';
+import { apiSuccess, apiError, requirePermission } from '@/lib/api';
 import { blogPostSchema } from '@/lib/validations';
 import { slugify } from '@/lib/utils';
 
@@ -18,22 +18,22 @@ export async function GET(request: Request) {
     const posts = await BlogPost.find(filter).sort({ publishedAt: -1 }).lean();
     return apiSuccess(posts);
   } catch (error) {
-    console.error('GET /api/blog:', error);
-    return apiError('Failed to fetch blog posts', 500);
+    console.error('GET /api/blog error:', error);
+    return apiError(error);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin();
+    const session = await requirePermission('manage_blog');
     if (!session) return apiError('Unauthorized', 401);
 
     const body = await request.json();
-    const parsed = blogPostSchema.safeParse(body);
-    if (!parsed.success) return apiError(parsed.error.issues[0]?.message ?? 'Invalid data');
+    // Validate with Zod; let catch block handle formatting
+    const parsed = blogPostSchema.parse(body);
 
     await connectDB();
-    const data = { ...parsed.data };
+    const data = { ...parsed };
     if (!data.slug) data.slug = slugify(data.title.en);
 
     const existing = await BlogPost.findOne({ slug: data.slug });
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const post = await BlogPost.create(data);
     return apiSuccess(post, 201);
   } catch (error) {
-    console.error('POST /api/blog:', error);
-    return apiError('Failed to create blog post', 500);
+    console.error('POST /api/blog error:', error);
+    return apiError(error);
   }
 }

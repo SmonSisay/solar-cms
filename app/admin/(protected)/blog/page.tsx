@@ -5,10 +5,17 @@ import BlogPost from '@/lib/models/BlogPost';
 import DeleteBlogPostButton from '@/components/admin/DeleteBlogPostButton';
 import { Button } from '@/components/ui/Button';
 import { Plus, Edit } from 'lucide-react';
+import { requirePermission } from '@/lib/api';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BlogAdminPage() {
+  const allowed = await requirePermission('manage_blog');
+  if (!allowed) {
+    redirect('/admin');
+  }
+
   await connectDB();
   const posts = await BlogPost.find({}).sort({ createdAt: -1 }).lean();
 
