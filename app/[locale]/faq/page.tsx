@@ -1,23 +1,36 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
-import { getFAQs } from '@/lib/data';
+import { getFAQs, getSettings } from '@/lib/data';
 import FAQClient from '@/components/faq/FAQClient';
 import { t as getText } from '@/lib/locale';
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://smon.com';
 
 interface Props {
   params: { locale: string };
 }
 
 export async function generateMetadata({ params: { locale } }: Props): Promise<Metadata> {
-  const t = await getTranslations({ locale, namespace: 'faq' });
+  const [t, settings] = await Promise.all([
+    getTranslations({ locale, namespace: 'faq' }),
+    getSettings(),
+  ]);
+  const title = `${t('title')} | ${settings.businessName}`;
+  const description = t('subtitle');
   return {
-    title: `${t('title')} | Smon Solar`,
-    description: t('subtitle'),
+    title,
+    description,
     alternates: {
-      languages: {
-        en: `/en/faq`,
-        am: `/am/faq`,
-      },
+      languages: { en: `/en/faq`, am: `/am/faq` },
+      canonical: `${BASE_URL}/${locale}/faq`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${BASE_URL}/${locale}/faq`,
+      siteName: settings.businessName,
+      locale: locale === 'am' ? 'am_ET' : 'en_US',
+      type: 'website',
     },
   };
 }

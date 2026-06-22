@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import WhatsAppButton from '@/components/layout/WhatsAppButton';
-import { getSettings } from '@/lib/data';
+import { getSettings, getMenuLinks } from '@/lib/data';
 import '../globals.css';
 
 const inter = Inter({
@@ -35,13 +35,18 @@ export default async function LocaleLayout({
 }) {
   if (!locales.includes(locale)) notFound();
 
-  const [messages, settings] = await Promise.all([getMessages(), getSettings()]);
+  const [messages, settings, headerLinks, footerLinks] = await Promise.all([
+    getMessages(),
+    getSettings(),
+    getMenuLinks('header'),
+    getMenuLinks('footer'),
+  ]);
 
   return (
     <html lang={locale}>
       <body className={`${inter.variable} ${notoEthiopic.variable} font-sans ${locale === 'am' ? 'font-ethiopic text-[17px]' : ''}`}>
         <NextIntlClientProvider messages={messages}>
-          <Navbar businessName={settings.businessName} logo={settings.logo} />
+          <Navbar businessName={settings.businessName} logo={settings.logo} links={headerLinks} />
           <main>{children}</main>
           <Footer
             businessName={settings.businessName}
@@ -50,8 +55,13 @@ export default async function LocaleLayout({
             email={settings.email}
             address={settings.address}
             socialLinks={settings.socialLinks}
+            links={footerLinks}
           />
-          <WhatsAppButton whatsapp={settings.whatsapp} />
+          <WhatsAppButton
+            whatsapp={settings.whatsapp}
+            telegram={settings.socialLinks?.telegram}
+            phone={settings.phone?.[0]}
+          />
         </NextIntlClientProvider>
       </body>
     </html>
