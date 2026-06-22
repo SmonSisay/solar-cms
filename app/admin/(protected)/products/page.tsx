@@ -4,16 +4,13 @@ import { connectDB } from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
 import { formatETB } from '@/lib/utils';
 import DeleteProductButton from '@/components/admin/DeleteProductButton';
-import { requireEditorOrAbove } from '@/lib/api';
+import { requirePermission } from '@/lib/api';
+import { redirect } from 'next/navigation';
 
 export default async function AdminProductsPage() {
-  const allowed = await requireEditorOrAbove();
+  const allowed = await requirePermission('manage_products');
   if (!allowed) {
-    return (
-      <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-components text-sm">
-        Access Denied: You do not have the required permissions to view this page.
-      </div>
-    );
+    redirect('/admin');
   }
 
   await connectDB();
