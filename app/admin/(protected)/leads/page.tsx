@@ -1,22 +1,35 @@
 import { connectDB } from '@/lib/mongodb';
-import QuoteLead from '@/lib/models/QuoteLead';
+import { QuoteLead, User } from '@/lib/models';
 import LeadsTable from '@/components/admin/LeadsTable';
-import { requireContentManagerOrAbove } from '@/lib/api';
+import { requirePermission } from '@/lib/api';
+import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminLeadsPage() {
-  const allowed = await requireContentManagerOrAbove();
+  const allowed = await requirePermission('manage_leads');
   if (!allowed) {
-    return (
-      <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-components text-sm">
-        Access Denied: You do not have the required permissions to view this page.
-      </div>
-    );
+    redirect('/admin');
   }
 
   await connectDB();
-  const leads = await QuoteLead.find().sort({ createdAt: -1 }).lean();
 
-  const serialized = leads.map((lead) => ({
+  // Fetch leads and populate assignment
+  const leads = await QuoteLead.find()
+    .populate('assignedUser', 'name email')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // Fetch active system users who can be assigned leads
+  const users = await User.find({
+    active: true,
+    role: { $in: ['super_admin', 'admin', 'editor'] },
+  })
+    .select('name email')
+    .sort({ name: 1 })
+    .lean();
+
+  const serializedLeads = leads.map((lead) => ({
     _id: String(lead._id),
     name: lead.name,
     email: lead.email,
@@ -26,7 +39,26 @@ export default async function AdminLeadsPage() {
     source: lead.source,
     status: lead.status,
     adminNote: lead.adminNote,
+    notes: (lead.notes || []).map((n: any) => ({
+      text: n.text,
+      author: n.author,
+      createdAt: n.createdAt.toISOString(),
+    })),
+    followUpDate: lead.followUpDate ? lead.followUpDate.toISOString() : undefined,
+    assignedUser: lead.assignedUser
+      ? {
+          _id: String((lead.assignedUser as any)._id),
+          name: (lead.assignedUser as any).name,
+          email: (lead.assignedUser as any).email,
+        }
+      : null,
     createdAt: lead.createdAt.toISOString(),
+  }));
+
+  const serializedUsers = users.map((u) => ({
+    _id: String(u._id),
+    name: u.name,
+    email: u.email,
   }));
 
   return (
@@ -37,7 +69,7 @@ export default async function AdminLeadsPage() {
           {leads.length} total · {leads.filter((l) => l.status === 'new').length} new
         </p>
       </div>
-      <LeadsTable initialLeads={serialized} />
+      <LeadsTable initialLeads={serializedLeads} users={serializedUsers} />
     </div>
   );
 }
