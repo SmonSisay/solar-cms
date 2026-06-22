@@ -7,13 +7,25 @@ import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { cn } from '@/lib/utils';
+import type { BilingualText } from '@/lib/types';
+import { t as getText } from '@/lib/locale';
+
+interface MenuLinkItem {
+  _id: string;
+  label: BilingualText;
+  url: string;
+  order: number;
+}
 
 interface NavbarProps {
   businessName: string;
   logo?: string;
+  links?: MenuLinkItem[];
 }
 
-export default function Navbar({ businessName, logo }: NavbarProps) {
+const DEFAULT_NAV_KEYS = ['products', 'services', 'about', 'blog', 'faq', 'contact'] as const;
+
+export default function Navbar({ businessName, logo, links }: NavbarProps) {
   const t = useTranslations('nav');
   const locale = useLocale();
   const pathname = usePathname();
@@ -28,7 +40,41 @@ export default function Navbar({ businessName, logo }: NavbarProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const navLinks = ['products', 'services', 'about', 'blog', 'faq', 'contact'] as const;
+  // Use dynamic links if available, otherwise fall back to hardcoded defaults
+  const useDynamic = links && links.length > 0;
+
+  const renderLink = (href: string, label: string, key: string) => (
+    <Link
+      key={key}
+      href={href}
+      className={cn(
+        'text-sm transition-colors',
+        pathname.includes(href.replace(`/${locale}`, ''))
+          ? 'text-solar underline underline-offset-4'
+          : 'text-slate-300 hover:text-white'
+      )}
+    >
+      {label}
+    </Link>
+  );
+
+  const renderMobileLink = (href: string, label: string, key: string) => (
+    <Link
+      key={key}
+      href={href}
+      onClick={() => setOpen(false)}
+      className="block py-2 text-slate-300 hover:text-solar text-sm"
+    >
+      {label}
+    </Link>
+  );
+
+  const resolveHref = (url: string) => {
+    // External links stay as-is
+    if (url.startsWith('http')) return url;
+    // Internal links get locale prefix
+    return `/${locale}${url.startsWith('/') ? url : `/${url}`}`;
+  };
 
   return (
     <nav
@@ -48,20 +94,17 @@ export default function Navbar({ businessName, logo }: NavbarProps) {
           </Link>
 
           <div className="hidden lg:flex items-center gap-6">
-            {navLinks.map((key) => (
-              <Link
-                key={key}
-                href={`/${locale}/${key}`}
-                className={cn(
-                  'text-sm transition-colors',
-                  pathname.includes(`/${key}`)
-                    ? 'text-solar underline underline-offset-4'
-                    : 'text-slate-300 hover:text-white'
+            {useDynamic
+              ? links.map((link) =>
+                  renderLink(
+                    resolveHref(link.url),
+                    getText(link.label, locale),
+                    link._id
+                  )
+                )
+              : DEFAULT_NAV_KEYS.map((key) =>
+                  renderLink(`/${locale}/${key}`, t(key), key)
                 )}
-              >
-                {t(key)}
-              </Link>
-            ))}
           </div>
 
           <div className="hidden lg:flex items-center gap-4">
@@ -85,16 +128,17 @@ export default function Navbar({ businessName, logo }: NavbarProps) {
 
         {open && (
           <div className="lg:hidden pb-4 space-y-2">
-            {navLinks.map((key) => (
-              <Link
-                key={key}
-                href={`/${locale}/${key}`}
-                onClick={() => setOpen(false)}
-                className="block py-2 text-slate-300 hover:text-solar text-sm"
-              >
-                {t(key)}
-              </Link>
-            ))}
+            {useDynamic
+              ? links.map((link) =>
+                  renderMobileLink(
+                    resolveHref(link.url),
+                    getText(link.label, locale),
+                    link._id
+                  )
+                )
+              : DEFAULT_NAV_KEYS.map((key) =>
+                  renderMobileLink(`/${locale}/${key}`, t(key), key)
+                )}
             <div className="flex items-center gap-4 pt-2">
               <LanguageSwitcher />
               <Link

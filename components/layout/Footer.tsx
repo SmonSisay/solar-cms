@@ -6,6 +6,13 @@ import { Phone, Mail } from 'lucide-react';
 import type { BilingualText } from '@/lib/types';
 import { t as getText } from '@/lib/locale';
 
+interface MenuLinkItem {
+  _id: string;
+  label: BilingualText;
+  url: string;
+  order: number;
+}
+
 interface FooterProps {
   businessName: string;
   tagline: BilingualText;
@@ -18,14 +25,30 @@ interface FooterProps {
     telegram?: string;
     youtube?: string;
   };
+  links?: MenuLinkItem[];
 }
 
-export default function Footer({ businessName, tagline, phone, email, address, socialLinks }: FooterProps) {
+const DEFAULT_FOOTER_KEYS = ['products', 'services', 'about', 'blog', 'faq', 'contact'] as const;
+
+export default function Footer({
+  businessName,
+  tagline = { en: '', am: '' },
+  phone = [],
+  email = '',
+  address = { en: '', am: '' },
+  socialLinks = {},
+  links = [],
+}: FooterProps) {
   const locale = useLocale();
   const t = useTranslations('footer');
   const tNav = useTranslations('nav');
 
-  const links = ['products', 'services', 'about', 'blog', 'faq', 'contact'] as const;
+  const useDynamic = links && links.length > 0;
+
+  const resolveHref = (url: string) => {
+    if (url.startsWith('http')) return url;
+    return `/${locale}${url.startsWith('/') ? url : `/${url}`}`;
+  };
 
   return (
     <footer className="bg-primary text-slate-300 mt-20">
@@ -50,13 +73,21 @@ export default function Footer({ businessName, tagline, phone, email, address, s
           <div>
             <h4 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">{t('quickLinks')}</h4>
             <ul className="space-y-2">
-              {links.map((key) => (
-                <li key={key}>
-                  <Link href={`/${locale}/${key}`} className="text-sm hover:text-solar transition-colors">
-                    {tNav(key)}
-                  </Link>
-                </li>
-              ))}
+              {useDynamic
+                ? links.map((link) => (
+                    <li key={link._id}>
+                      <Link href={resolveHref(link.url)} className="text-sm hover:text-solar transition-colors">
+                        {getText(link.label, locale)}
+                      </Link>
+                    </li>
+                  ))
+                : DEFAULT_FOOTER_KEYS.map((key) => (
+                    <li key={key}>
+                      <Link href={`/${locale}/${key}`} className="text-sm hover:text-solar transition-colors">
+                        {tNav(key)}
+                      </Link>
+                    </li>
+                  ))}
             </ul>
           </div>
 
