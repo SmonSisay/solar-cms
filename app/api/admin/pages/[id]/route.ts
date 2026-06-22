@@ -1,34 +1,29 @@
 import { connectDB } from '@/lib/mongodb';
 import { Page } from '@/lib/models';
-import { apiSuccess, apiError, requireRole } from '@/lib/api';
+import { apiSuccess, apiError, requirePermission } from '@/lib/api';
 import { pageSchema } from '@/lib/validations';
 import { slugify } from '@/lib/utils';
-
-const ALLOWED_ROLES = ['super_admin', 'admin', 'editor', 'content_manager'];
+import { NotFoundError } from '@/lib/errors';
 
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireRole(ALLOWED_ROLES);
+    const session = await requirePermission('manage_pages');
     if (!session) return apiError('Forbidden', 403);
 
     const body = await request.json();
-    const parsed = pageSchema.partial().safeParse(body);
-
-    if (!parsed.success) {
-      return apiError(parsed.error.issues[0]?.message ?? 'Invalid data');
-    }
+    const parsed = pageSchema.partial().parse(body);
 
     await connectDB();
 
     const page = await Page.findOne({ _id: params.id, deletedAt: null });
     if (!page) {
-      return apiError('Page not found', 404);
+      throw new NotFoundError('Page not found');
     }
 
-    const data = parsed.data;
+    const data = parsed;
 
     if (data.title && !data.slug && data.title.en) {
       data.slug = slugify(data.title.en);
@@ -46,8 +41,8 @@ export async function PUT(
 
     return apiSuccess(page);
   } catch (error) {
-    console.error('PUT /api/admin/pages/[id]:', error);
-    return apiError('Failed to update page', 500);
+    console.error('PUT /api/admin/pages/[id] error:', error);
+    return apiError(error);
   }
 }
 
@@ -56,7 +51,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireRole(ALLOWED_ROLES);
+    const session = await requirePermission('manage_pages');
     if (!session) return apiError('Forbidden', 403);
 
     const currentUserId = (session.user as any).id;
@@ -65,7 +60,7 @@ export async function DELETE(
 
     const page = await Page.findOne({ _id: params.id, deletedAt: null });
     if (!page) {
-      return apiError('Page not found', 404);
+      throw new NotFoundError('Page not found');
     }
 
     // Soft delete
@@ -75,7 +70,7 @@ export async function DELETE(
 
     return apiSuccess({ message: 'Page soft deleted successfully' });
   } catch (error) {
-    console.error('DELETE /api/admin/pages/[id]:', error);
-    return apiError('Failed to delete page', 500);
+    console.error('DELETE /api/admin/pages/[id] error:', error);
+    return apiError(error);
   }
 }

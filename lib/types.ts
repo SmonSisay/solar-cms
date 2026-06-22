@@ -19,7 +19,7 @@ export type FAQCategory =
   | 'maintenance'
   | 'technical';
 
-export type LeadStatus = 'new' | 'read' | 'replied';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'won' | 'lost';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

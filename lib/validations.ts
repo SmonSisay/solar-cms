@@ -95,8 +95,15 @@ export const leadSchema = z.object({
 });
 
 export const leadUpdateSchema = z.object({
-  status: z.enum(['new', 'read', 'replied']).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'won', 'lost']).optional(),
   adminNote: z.string().optional(),
+  followUpDate: z.string().nullable().optional(),
+  assignedUser: z.string().nullable().optional(),
+  notes: z.array(z.object({
+    text: z.string(),
+    author: z.string(),
+    createdAt: z.string().optional(),
+  })).optional(),
 });
 
 export const contactSchema = z.object({
@@ -178,3 +185,37 @@ export const pageSchema = z.object({
   keywords: optionalBilingualSchema,
 });
 
+export const menuLinkSchema = z.object({
+  label: bilingualSchema,
+  url: z.string().min(1, 'URL is required'),
+  location: z.enum(['header', 'footer']),
+  order: z.number().default(0),
+  published: z.boolean().default(true),
+  parentId: z.string().optional().nullable(),
+});
+
+export const redirectSchema = z.object({
+  source: z.string().min(1, 'Source path is required'),
+  destination: z.string().min(1, 'Destination path is required'),
+  type: z.union([z.literal(301), z.literal(302)]).default(301),
+  active: z.boolean().default(true),
+});
+
+export const projectSchema = z.object({
+  name: bilingualSchema,
+  slug: z.string().optional(),
+  clientName: z.string().optional().default(''),
+  location: optionalBilingualSchema,
+  capacity: z.string().optional().default(''),
+  description: optionalBilingualSchema,
+  completionDate: z.string().nullable().optional(),
+  images: z.array(z.string()).optional().default([]),
+  featured: z.boolean().default(false),
+  published: z.boolean().default(true),
+  order: z.number().default(0),
+});
+
+export const searchQuerySchema = z.object({
+  q: z.string().min(1, 'Search query is required'),
+  limit: z.number().min(1).max(50).default(10),
+});

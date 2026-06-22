@@ -7,6 +7,7 @@ import {
   Testimonial,
   TeamMember,
   Service,
+  MenuLink,
 } from './models';
 import { escapeRegex } from './utils';
 
@@ -84,4 +85,14 @@ export async function getServices() {
   await connectDB();
   const services = await Service.find().sort({ order: 1 }).lean();
   return JSON.parse(JSON.stringify(services));
+}
+
+export async function getMenuLinks(location?: 'header' | 'footer') {
+  await connectDB();
+  const query: Record<string, any> = { published: true };
+  if (location) {
+    query.location = location;
+  }
+  const links = await MenuLink.find(query).sort({ order: 1 }).lean();
+  return JSON.parse(JSON.stringify(links));
 }

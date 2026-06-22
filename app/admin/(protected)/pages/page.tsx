@@ -2,10 +2,17 @@ import Link from 'next/link';
 import { connectDB } from '@/lib/mongodb';
 import { Page } from '@/lib/models';
 import DeletePageButton from '@/components/admin/DeletePageButton';
+import { requirePermission } from '@/lib/api';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPagesPage() {
+  const allowed = await requirePermission('manage_pages');
+  if (!allowed) {
+    redirect('/admin');
+  }
+
   await connectDB();
   const pages = await Page.find({ deletedAt: null }).sort({ createdAt: -1 }).lean();
 
