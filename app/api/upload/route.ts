@@ -1,5 +1,8 @@
 import { apiSuccess, apiError, requireAdmin } from '@/lib/api';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { MediaAsset } from '@/lib/models';
+import { logActivity } from '@/lib/logger';
+import { connectDB } from '@/lib/mongodb';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = [
@@ -14,7 +17,7 @@ const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'];
 export async function POST(request: Request) {
   try {
     const session = await requireAdmin();
-    if (!session) return apiError('Unauthorized', 401);
+    if (!session || !session.user) return apiError('Unauthorized', 401);
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -46,9 +49,36 @@ export async function POST(request: Request) {
 
     const result = await uploadToCloudinary(buffer, folder, resourceType);
 
+    await connectDB();
+    const mediaAsset = await MediaAsset.create({
+      url: result.url,
+      publicId: result.publicId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      folder: folder,
+      uploadedBy: session.user.id,
+    });
+
+    // Log the upload activity
+    await logActivity({
+      userId: session.user.id,
+      userName: session.user.name || 'Admin',
+      userEmail: session.user.email || '',
+      action: 'create',
+      module: 'media',
+      targetId: mediaAsset._id.toString(),
+      targetName: file.name,
+      details: `Uploaded file to folder: ${folder}`,
+    });
+
     return apiSuccess({
       url: result.url,
       public_id: result.publicId,
+      _id: mediaAsset._id,
+      fileName: mediaAsset.fileName,
+      fileSize: mediaAsset.fileSize,
+      fileType: mediaAsset.fileType,
     });
   } catch (error) {
     console.error('POST /api/upload:', error);

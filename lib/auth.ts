@@ -6,6 +6,7 @@ import { checkRateLimit } from './rate-limit';
 import { connectDB } from './mongodb';
 import { User } from './models';
 import { authConfig } from './auth.config';
+import { logActivity } from './logger';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -52,6 +53,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  events: {
+    async signIn({ user }) {
+      try {
+        const headerList = headers();
+        const ip = headerList.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+        await logActivity({
+          userId: user.id || '',
+          userName: user.name || 'Admin',
+          userEmail: user.email || '',
+          action: 'login',
+          module: 'auth',
+          details: 'User logged in successfully',
+          ipAddress: ip,
+        });
+      } catch (err) {
+        console.error('Failed to log signIn event:', err);
+      }
+    },
+  },
 });
 
 

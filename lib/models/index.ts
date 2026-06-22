@@ -9,4 +9,8 @@ export { default as Service } from './Service';
 export { default as RateLimit } from './RateLimit';
 export { default as User } from './User';
 export { default as Page } from './Page';
-
+export { default as MenuLink } from './MenuLink';
+export { default as Redirect } from './Redirect';
+export { default as ActivityLog } from './ActivityLog';
+export { default as Project } from './Project';
+export { default as MediaAsset } from './MediaAsset';

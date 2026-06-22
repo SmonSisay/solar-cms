@@ -13,6 +13,17 @@ import {
   Users,
   FileText,
   PenSquare,
+  Navigation2,
+  Activity,
+  Search,
+  Image as ImageIcon,
+  BarChart3,
+  RefreshCw,
+  HelpCircle,
+  Star,
+  Wrench,
+  UserCheck,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -43,10 +54,40 @@ const navItems = [
     roles: ['super_admin', 'admin', 'editor', 'content_manager'],
   },
   {
+    href: '/admin/services',
+    label: 'Services',
+    icon: Wrench,
+    roles: ['super_admin', 'admin'],
+  },
+  {
     href: '/admin/leads',
     label: 'Leads',
     icon: MessageSquare,
     roles: ['super_admin', 'admin'],
+  },
+  {
+    href: '/admin/faq',
+    label: 'FAQ',
+    icon: HelpCircle,
+    roles: ['super_admin', 'admin', 'editor', 'content_manager'],
+  },
+  {
+    href: '/admin/testimonials',
+    label: 'Testimonials',
+    icon: Star,
+    roles: ['super_admin', 'admin'],
+  },
+  {
+    href: '/admin/team',
+    label: 'Team',
+    icon: UserCheck,
+    roles: ['super_admin', 'admin'],
+  },
+  {
+    href: '/admin/media',
+    label: 'Media Library',
+    icon: ImageIcon,
+    roles: ['super_admin', 'admin', 'editor', 'content_manager'],
   },
   {
     href: '/admin/users',
@@ -55,10 +96,34 @@ const navItems = [
     roles: ['super_admin'],
   },
   {
+    href: '/admin/navigation',
+    label: 'Navigation',
+    icon: Navigation2,
+    roles: ['super_admin', 'admin'],
+  },
+  {
+    href: '/admin/redirects',
+    label: 'Redirects',
+    icon: RefreshCw,
+    roles: ['super_admin', 'admin'],
+  },
+  {
     href: '/admin/settings',
     label: 'Site Settings',
     icon: Settings,
     roles: ['super_admin'],
+  },
+  {
+    href: '/admin/activity',
+    label: 'Activity Log',
+    icon: Activity,
+    roles: ['super_admin'],
+  },
+  {
+    href: '/admin/trash',
+    label: 'Trash',
+    icon: Trash2,
+    roles: ['super_admin', 'admin'],
   },
 ];
 

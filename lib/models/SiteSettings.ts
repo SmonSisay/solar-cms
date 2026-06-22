@@ -30,6 +30,7 @@ export interface ISiteSettings extends Document {
   certifications: Array<{ name: string; logo: string }>;
   partnerLogos: string[];
   metaDescription: BilingualText;
+  homeSections: Array<{ name: string; enabled: boolean; order: number }>;
 }
 
 const siteSettingsSchema = new Schema<ISiteSettings>(
@@ -81,6 +82,21 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     },
     partnerLogos: { type: [String], default: [] },
     metaDescription: { type: bilingualSchema, default: () => ({ en: '', am: '' }) },
+    homeSections: {
+      type: [
+        {
+          name: String,
+          enabled: Boolean,
+          order: Number,
+        },
+      ],
+      default: [
+        { name: 'hero', enabled: true, order: 0 },
+        { name: 'stats', enabled: true, order: 1 },
+        { name: 'products', enabled: true, order: 2 },
+        { name: 'whyus', enabled: true, order: 3 },
+      ],
+    },
   },
   { timestamps: true }
 );
